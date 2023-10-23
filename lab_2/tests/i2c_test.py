@@ -1,3 +1,4 @@
+#Based on code provided by Adafruit found here https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi
 import board 
 import digitalio
 import busio

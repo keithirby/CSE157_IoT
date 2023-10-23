@@ -1,3 +1,4 @@
+#Based on code provided by adafruit found here https://learn.adafruit.com/adafruit-sht31-d-temperature-and-humidity-sensor-breakout/python-circuitpython
 import board #General library for GPIO 
 import adafruit_sht31d #Library for temp and humd sensor
 

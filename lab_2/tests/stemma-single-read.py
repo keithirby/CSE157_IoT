@@ -21,7 +21,7 @@ def main():
     if ss_controller:
         #If the controller was made print the values
         print("tempature: %0.1f C" % ss_controller.get_temp())
-        print("mositure: %0.1f " % ss_controller.moisture_read())
+        print("moisture: %0.1f " % ss_controller.moisture_read())
     else: 
         #If the controller wasnt made tell the user
         print("STEMMA  controller was not initialized")

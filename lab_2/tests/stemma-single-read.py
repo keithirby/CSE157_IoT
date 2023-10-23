@@ -1,3 +1,4 @@
+#Based on code provided by adafruit found here https://learn.adafruit.com/adafruit-stemma-soil-sensor-i2c-capacitive-moisture-sensor/python-circuitpython-test
 import board #General library for GPIO 
 from adafruit_seesaw.seesaw import Seesaw
 

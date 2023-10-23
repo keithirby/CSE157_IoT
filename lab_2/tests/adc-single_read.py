@@ -1,3 +1,4 @@
+#Based on code provided by Adafruit found here https://learn.adafruit.com/adafruit-4-channel-adc-breakouts/python-circuitpython#python-installation-of-ads1x15-library-2997261
 import board #General library for GPIO 
 import busio #For io usage
 import adafruit_ads1x15.ads1015 as ADS

@@ -1,4 +1,5 @@
 #Based on code provided by Adafruit found here https://learn.adafruit.com/adafruit-4-channel-adc-breakouts/python-circuitpython#python-installation-of-ads1x15-library-2997261
+#Also used Adafruit code from here https://github.com/adafruit/Adafruit_CircuitPython_SimpleIO/blob/main/examples/simpleio_map_range_simpletest.py
 import board #General library for GPIO 
 import busio #For io usage
 import time #Used for pausing between reads

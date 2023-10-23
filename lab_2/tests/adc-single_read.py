@@ -8,13 +8,13 @@ def init_components():
     #Create a I2C controller
     i2c_bus = busio.I2C(board.SCL, board.SDA)
 
-    #Make a ads controller
+    #Make a adc controller
     ads = ADS.ADS1015(i2c_bus)
     
     #Setup the channel to read from
     chan = AnalogIn(ads, ADS.P0)
     
-    #return channel ADS is reading from
+    #return channel ADC is reading from
     return chan
 
 
@@ -28,8 +28,8 @@ def main():
     #Print the values found
     if ads_controller:
         #If the controller was made print the values
-        print("ADS value:", ads_controller.value)
-        print("ADS voltage:", ads_controller.voltage)
+        print("ADC value:", ads_controller.value)
+        print("ADC voltage:", ads_controller.voltage)
     else: 
         #If the controller wasnt made tell the user
         print("STEMMA  controller was not initialized")

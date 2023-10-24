@@ -62,7 +62,7 @@ def main():
     
     #Start the sensor polling
     print("Hello there! commencing sensor polling...")
-    poll_sensors()
+    poll_sensors(i2c_cont)
 
 	
     

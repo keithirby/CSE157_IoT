@@ -17,7 +17,7 @@ def grab_date_time() -> str:
     """
     time_obj = datetime.now()
     curr_date = date.today()
-    curr_time = time_obj.strftime("%H:%M %p")
+    curr_time = time_obj.strftime("%H:%M:%S %p")
 
     # Combine the current date and time, then return it
     curr_combined = str(curr_time) + "\n" + str(curr_date) + "\n"

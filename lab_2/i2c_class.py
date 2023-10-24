@@ -58,7 +58,7 @@ class i2c_controller:
         """
         return "{:.2f}".format(self.soilMoistContr.moisture_read())
     
-    def map_volt_value(voltage):
+    def map_volt_value(self, voltage):
         """
         Map a voltage to a wind speed value and return it
         """

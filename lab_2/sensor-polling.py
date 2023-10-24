@@ -1,6 +1,6 @@
 from datetime import datetime, date #For getting current date and time
 import os #For getting actual path when messing with files
-from i2c_class import i2c_controller
+from i2c_class import i2c_controller, file_manager
 import time
 
 
@@ -67,15 +67,12 @@ def main():
 	#Get the I2C device controller
     i2c_cont = create_I2C_controller()
 
-    #Setting the name of the file
-    file_name = "polling-log.txt"
-    #Setting the path to save the file to
-    save_path = os.path.expanduser("~/Desktop/")
-    complete_path = os.path.join(save_path, file_name)
+    #Start the file manager
+    filer = file_manager
     #Quickly write name to file once
-    write_item(complete_path, grab_name())
+    filer.write_single(grab_name())
 
-
+    
     
     #Start the sensor polling
     print("Hello there! commencing sensor polling...")
@@ -84,8 +81,8 @@ def main():
 
     #While loop that continues until the program is cancelled to write to a file every 5 seconds
     while(1):
-        write_item(complete_path, grab_date_time())
-        write_items(complete_path, poll_sensors(i2c_cont))
+        filer.append_single(grab_date_time())
+        filer.append_multiple(poll_sensors())
         print("Write Complete")
         time.sleep(5)
 

@@ -86,6 +86,7 @@ def main():
     while(1):
         write_item(complete_path, grab_date_time())
         write_items(complete_path, poll_sensors(i2c_cont))
+        print("Write Complete")
         time.sleep(5)
 
 

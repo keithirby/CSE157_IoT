@@ -68,7 +68,7 @@ def main():
     i2c_cont = create_I2C_controller()
 
     #Start the file manager
-    filer = file_manager
+    filer = file_manager()
     #Quickly write name to file once
     user_name = grab_name()
     filer.write_single(user_name)

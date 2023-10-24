@@ -29,7 +29,30 @@ def create_I2C_controller():
 	controller = i2c_controller()
 	return controller 
 
+def poll_sensors(i2c_cont)->[]:
+    sensor_str_1 = "Temperature: " + i2c_cont.getTemp() + "C"
+    sensor_str_2 = "Humidity: "+ i2c_cont.getHumd() + "%"
+    sensor_str_3 = "Soil Moisture: " + i2c_cont.getSoilTemp() + "C"
+    sensor_str_4 = "Soil Temperature: " + i2c_cont.getSoilMoist()
+    sensor_str_5 = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s"
 
+    print(sensor_str_1)
+    print(sensor_str_2)
+    print(sensor_str_3)
+    print(sensor_str_4)
+    print(sensor_str_5)
+      
+def write_file(): 
+    """
+    This function is dedicated to writing to a file
+    """
+    #Setting the path to save the file to
+    save_path = os.path.expanduser("~/Desktop/")
+    file_name = "report.txt"
+    complete_path = os.path.join(save_path, file_name)
+    #Write to a file
+    with open(complete_path, "w") as file: 
+         file.writelines
 
 
 #Main function that calls all other functions 
@@ -39,12 +62,8 @@ def main():
     
     #Start the sensor polling
     print("Hello there! commencing sensor polling...")
-    print("#1", i2c_cont.getTemp())
-    print("#2", i2c_cont.getHumd())
-    print("#3", i2c_cont.getSoilTemp())
-    print("#4", i2c_cont.getSoilMoist())
-    print("#5", i2c_cont.getADCValue())
-    print("#6", i2c_cont.getADCVoltage())
+    poll_sensors()
+
 	
     
 

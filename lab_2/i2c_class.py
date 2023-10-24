@@ -6,6 +6,13 @@ import adafruit_sht31d #Library for temp and humd sensor
 from adafruit_seesaw.seesaw import Seesaw
 import adafruit_ads1x15.ads1015 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
+import simpleio #For mapping voltage values to wind speed
+
+#Constants for mapping the ADC values 
+SENSOR_MIN = 0.41
+SENSOR_MAX = 0.76
+VALUE_MIN  = 0
+VALUE_MAX  = 32.4
 
 class i2c_controller:
     def __init__(self):
@@ -31,25 +38,32 @@ class i2c_controller:
         """
         Get the ambient temperature using the temperature and humidity sensor
         """
-        return self.tempHumdContr.temperature
+        return "{:.2f}".format(self.tempHumdContr.temperature)
     
     def getHumd(self):
         """
         Get the ambient moisture using the temperature and humidity sensor
         """
-        return self.tempHumdContr.relative_humidity
+        return "{:.2f}".format(self.tempHumdContr.relative_humidity)
     
     def getSoilTemp(self): 
         """
         Get soil tempature using the soil and moisture sensor
         """
-        return self.soilMoistContr.get_temp()
+        return "{:.2f}".format(self.soilMoistContr.get_temp())
     
     def getSoilMoist(self):
         """
         Get soil moisture using the soil and moisture sensor
         """
-        return self.soilMoistContr.moisture_read()
+        return "{:.2f}".format(self.soilMoistContr.moisture_read())
+    
+    def map_volt_value(voltage):
+        """
+        Map a voltage to a wind speed value and return it
+        """
+        mapped_value = "{:.2f}".format((voltage, SENSOR_MIN, SENSOR_MAX, VALUE_MIN, VALUE_MAX))
+        return mapped_value
     
     def getADCValue(self):
         """

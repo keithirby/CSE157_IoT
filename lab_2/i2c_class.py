@@ -62,7 +62,8 @@ class i2c_controller:
         """
         Map a voltage to a wind speed value and return it
         """
-        mapped_value = "{:.2f}".format((voltage, SENSOR_MIN, SENSOR_MAX, VALUE_MIN, VALUE_MAX))
+        mapped_value = "{:.2f}".format(simpleio.map_range(
+            voltage, SENSOR_MIN, SENSOR_MAX, VALUE_MIN, VALUE_MAX))
         return mapped_value
     
     def getADCValue(self):

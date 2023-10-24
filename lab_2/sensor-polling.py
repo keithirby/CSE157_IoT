@@ -83,7 +83,7 @@ def main():
     #While loop that continues until the program is cancelled to write to a file every 5 seconds
     while(1):
         filer.append_single(grab_date_time())
-        filer.append_multiple(poll_sensors())
+        filer.append_multiple(poll_sensors(i2c_cont))
         print("Write Complete")
         time.sleep(5)
 

@@ -7,7 +7,7 @@ def grab_name() -> str:
 	"""
 	For returning a pre-defined name
 	"""
-	name_str = "Keith Irby"
+	name_str = "Keith Irby \n"
 	return name_str
 
 
@@ -50,15 +50,12 @@ def main():
     #Quickly write name to file once
     user_name = grab_name()
     filer.write_single(user_name)
-    filer.write_single("\n")
 
-    
-    
+
     #Start the sensor polling
     print("Hello there! commencing sensor polling...")
-    
-    num_polls = 6 # 1 date and time poll + 5 sensor polls = 6 polls 
 
+    
     #While loop that continues until the program is cancelled to write to a file every 5 seconds
     while(1):
         filer.append_single(grab_date_time())

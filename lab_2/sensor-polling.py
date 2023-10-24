@@ -35,12 +35,6 @@ def poll_sensors(i2c_cont)->[]:
     sensor_str_3 = "Soil Moisture: " + i2c_cont.getSoilTemp() + "C"
     sensor_str_4 = "Soil Temperature: " + i2c_cont.getSoilMoist()
     sensor_str_5 = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s"
-
-    print(sensor_str_1)
-    print(sensor_str_2)
-    print(sensor_str_3)
-    print(sensor_str_4)
-    print(sensor_str_5)
       
 def write_file(): 
     """

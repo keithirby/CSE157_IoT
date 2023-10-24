@@ -3,13 +3,13 @@ import os #For getting actual path when messing with files
 from i2c_class import i2c_controller, file_manager
 import time
 
-
 def grab_name() -> str: 
 	"""
 	For returning a pre-defined name
 	"""
 	name_str = "Keith Irby"
 	return name_str
+
 
 def grab_date_time() -> str:
     """
@@ -23,12 +23,6 @@ def grab_date_time() -> str:
     curr_combined = str(curr_time) + "\n" + str(curr_date) + "\n"
     return curr_combined
 
-def create_I2C_controller():
-	"""
-	Creates the i2c controller object and returns it
-	"""
-	controller = i2c_controller()
-	return controller 
 
 def poll_sensors(i2c_cont)->[]:
     """
@@ -45,33 +39,18 @@ def poll_sensors(i2c_cont)->[]:
     #Return the polls list
     return poll_strs
       
-def write_item(file_path, write_item): 
-    """
-    This function is dedicated to writing one item to a file
-    """
-    #Write to a file
-    with open(file_path, "w") as file: 
-         file.writelines(write_item)
-
-def write_items(file_path, write_items): 
-    """
-    This function is dedicated to writing multiple items to a file
-    """
-    #Write to a file
-    with open(file_path, "w") as file: 
-         for i in write_items:
-            file.writelines(i)
 
 #Main function that calls all other functions 
 def main():
 	#Get the I2C device controller
-    i2c_cont = create_I2C_controller()
+    i2c_cont = i2c_controller()
 
     #Start the file manager
     filer = file_manager()
     #Quickly write name to file once
     user_name = grab_name()
     filer.write_single(user_name)
+    filer.write_single("\n")
 
     
     

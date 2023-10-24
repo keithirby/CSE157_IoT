@@ -4,6 +4,10 @@ import logging
 from i2c_class import i2c_controller, file_manager
 
 
+#Asyncio.sleep sleep vs time.sleep
+#Asyncio.sleep allows other functions to run while it sleeps, and can even have outputs after the sleep
+#time.sleep freezes everything until its sleep time is done, here we use asyncio sleep for sensor loggings, 
+#so each sensor isnt waiting on eachother to log data
 
 
 #Setting format for logger
@@ -28,6 +32,7 @@ logger_3.addHandler(file_handler)
 
 
 #First function for logging temp and humidity every 5 second by default 
+    #async def is necessary to define a native coroutine or asynchronous generator
 async def concurrent_funct_1(i2c_cont, interval = 5):
 
     #While loop that continues the sensor reading until the program is cancelled
@@ -85,3 +90,9 @@ if __name__ == "__main__":
         """
         print("Exiting program...")
         exit(0)
+
+
+#Resources 
+# Specfic descriptions on how asyncio works https://realpython.com/async-io-python/#the-asyncio-package-and-asyncawait
+# Special thanks to Harikrishna Kuttivelil (UC Santa Cruz, Internetworking Research Group) for his asyncio_example.py 
+    # which helped make a asyncio function very quickly without clutter

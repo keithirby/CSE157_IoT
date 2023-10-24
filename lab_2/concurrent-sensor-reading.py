@@ -56,7 +56,7 @@ async def concurrent_funct_3(i2c_cont, interval = 3):
     while True:
         wind_speed = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s"
  
-        logger_1.info(f"{wind_speed})
+        logger_1.info(f"{wind_speed}")
         await asyncio.sleep(interval)
 
 async def main():

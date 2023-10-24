@@ -70,7 +70,8 @@ def main():
     #Start the file manager
     filer = file_manager
     #Quickly write name to file once
-    filer.write_single(grab_name())
+    user_name = grab_name()
+    filer.write_single(user_name)
 
     
     

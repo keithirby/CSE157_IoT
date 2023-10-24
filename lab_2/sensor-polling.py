@@ -35,7 +35,7 @@ def poll_sensors(i2c_cont)->[]:
     poll_strs[1] = "Humidity: "+ i2c_cont.getHumd() + "%" + "\n"
     poll_strs[2] = "Soil Moisture: " + i2c_cont.getSoilTemp() + "C" + "\n"
     poll_strs[3] = "Soil Temperature: " + i2c_cont.getSoilMoist() + "\n"
-    poll_strs[4] = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s" + "\n"
+    poll_strs[4] = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s" + "\n \n"
     #Return the polls list
     return poll_strs
       
@@ -55,7 +55,7 @@ def main():
     #Start the sensor polling
     print("Hello there! commencing sensor polling...")
 
-    
+
     #While loop that continues until the program is cancelled to write to a file every 5 seconds
     while(1):
         filer.append_single(grab_date_time())
@@ -69,3 +69,8 @@ def main():
 
 #Starting the program
 main()
+
+
+#Resources 
+# How to format strings better https://pythonhow.com/how/limit-floats-to-two-decimal-points/
+# How to append to file https://www.geeksforgeeks.org/python-append-to-a-file/

@@ -29,7 +29,7 @@ def check_i2c():
 
 def main(): 
     #Initial display to the user if the checks crash
-    print("Hello! Checking board connections connection...")
+    print("Hello! Checking board connections...")
     #Call io check
     check_io()
     #Call i2c check

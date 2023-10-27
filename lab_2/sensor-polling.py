@@ -1,6 +1,6 @@
 from datetime import datetime, date #For getting current date and time
 import os #For getting actual path when messing with files
-from i2c_class import i2c_controller, file_manager
+from classes import i2c_controller, file_manager
 import time
 
 def grab_name() -> str: 

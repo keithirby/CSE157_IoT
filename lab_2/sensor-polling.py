@@ -1,6 +1,6 @@
 from datetime import datetime, date #For getting current date and time
 import os #For getting actual path when messing with files
-from i2c_class import i2c_controller, file_manager
+from classes import i2c_controller, file_manager
 import time
 
 def grab_name() -> str: 
@@ -33,8 +33,8 @@ def poll_sensors(i2c_cont)->[]:
     #Fill in the polls list
     poll_strs[0] = "Temperature: " + i2c_cont.getTemp() + "C" + "\n"
     poll_strs[1] = "Humidity: "+ i2c_cont.getHumd() + "%" + "\n"
-    poll_strs[2] = "Soil Moisture: " + i2c_cont.getSoilTemp() + "C" + "\n"
-    poll_strs[3] = "Soil Temperature: " + i2c_cont.getSoilMoist() + "\n"
+    poll_strs[2] = "Soil Temperature: " + i2c_cont.getSoilTemp() + "C" + "\n"
+    poll_strs[3] = "Soil Moisture: " + i2c_cont.getSoilMoist() + "\n"
     poll_strs[4] = "Wind Speed: "+ i2c_cont.map_volt_value(i2c_cont.getADCVoltage()) + "m/s" + "\n \n"
     #Return the polls list
     return poll_strs

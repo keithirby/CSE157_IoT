@@ -86,7 +86,7 @@ class i2c_controller:
 class file_manager:
     def __init__(self):
         """
-        Create the save path from constants defined in the i2c_class file and store it
+        Create the file save path from constants defined in the classes.py file and store it
         """
         #Create the save path of where we want the file
         save_path = os.path.expanduser(FILE_LOCATION)
@@ -95,14 +95,14 @@ class file_manager:
 
     def write_single(self, item):
         """
-        Write a single item to a file, when this is called the file is overwritten
+        Write a single item to a file, when this is called the file IS overwritten
         """
         with open(self.__save_path, "w") as file:
             file.write(item)
     
     def write_multiple(self, items): 
         """
-        Write multiple items to a file, when this is called the file is overwritten
+        Write multiple items to a file, when this is called the file IS overwritten
         """
         with open(self.__save_path, "w") as file:
             for i in items:
@@ -117,16 +117,8 @@ class file_manager:
     
     def append_multiple(self, items): 
         """
-        Append a multiple items to a file, when this is called the file is NOT overwritten
+        Append multiple items to a file, when this is called the file is NOT overwritten
         """
         with open(self.__save_path, "a") as file:
             for i in items:
                 file.writelines(i)
-        
-
-
-    
-
-    
-    
-

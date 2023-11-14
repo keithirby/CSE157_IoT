@@ -9,7 +9,7 @@ PORT = 1024
 # Set up logging for server.
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 slogger = logging.getLogger(f"(srv)")
-slogger.setLevel(level=logging.INFO)
+slogger.setLevel(level=logging.DEBUG)
 
 
 class Sensor_server:
@@ -25,6 +25,7 @@ class Sensor_server:
         # Set host and port.
         self._host = host
         self._port = port
+        self.no_data = True
         
         
         """
@@ -35,7 +36,7 @@ class Sensor_server:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Binding actual host and port.
-        slogger.debug("run: \tSetting socket...")
+        slogger.debug("__init__: \tSetting socket...")
         sock.bind((self._host, self._port))
         
         """
@@ -52,8 +53,22 @@ class Sensor_server:
         """
         # Register the socket to be monitored.
         self.sel.register(sock, selectors.EVENT_READ, data=None)
-        slogger.debug("run: Monitoring set.")
+        slogger.debug("__init__: Monitoring set.")
     # Run function.
+    
+    def send_msg(self, send_host, send_port, msg):
+        """
+        Send a socket message to a specfied address and port
+        """
+        
+        # self.no_data = True
+        # Create a temporary socket and send a message
+        slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((send_host, send_port))
+                byte_msg = bytes(msg, 'utf-8')
+                s.sendall(byte_msg)
+            
     def run_listener(self):
         """
         Starts listening for connections and starts the main event loop. 
@@ -67,20 +82,25 @@ class Sensor_server:
         """
         # Event loop.
         try:
-            while True:
-                events = self.sel.select(timeout=None)
+            while self.no_data:
+                slogger.debug(f"In while loop! {self.no_data}")
+                events = self.sel.select(timeout=5)
+                self.no_data = False
+
                 for key, mask in events:
                     if key.data is None:
                         """
                         Here, we accept and register new connections.
                         """
-                        self.accept_wrapper(key.fileobj)
+                        slogger.debug(f"entering accept_wrapper")
+                        self.accept_wrapper(key.fileobj) 
                     else:
                         """
                         Here, we service existing connections. This is 
                         the method where we will include our event-handling
                         code.
                         """
+                        slogger.debug(f"entering service_connection")
                         self.service_connection(key, mask)
         except KeyboardInterrupt:
             slogger.info("run_listener: Caught keyboard interrupt, exiting...")
@@ -105,6 +125,7 @@ class Sensor_server:
         events = selectors.EVENT_READ | selectors.EVENT_WRITE
         # Register connection with selector.
         self.sel.register(conn, events, data=data)
+
             
     def service_connection(self, key:selectors.SelectorKey, mask):
         """
@@ -120,6 +141,7 @@ class Sensor_server:
         and until it stops arriving (end of message). We then switch 
         to writing to the client, sending a reply.
         """
+        
         if mask & selectors.EVENT_READ:
             # At event, it should be ready for read.
             recv_data = sock.recv(1024)
@@ -148,11 +170,13 @@ class Sensor_server:
                 
                 # Unregister and close socket.
                 self.unregister_and_close(sock)
+                
     def unregister_and_close(self, sock:socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.
         """
-        slogger.debug("unregister_and_close: Closing connection...")
+        self.no_data = False
+        slogger.debug("unregister_and_close: Closing connection... No_data" + str(self.no_data))
         # Unregister the connection.
         try:
             self.sel.unregister(sock)

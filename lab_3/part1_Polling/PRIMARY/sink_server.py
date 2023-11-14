@@ -54,6 +54,7 @@ class Sink_server:
         # Set host and port.
         self._host = host
         self._port = port
+        self.no_data = True
         
         
         """
@@ -64,7 +65,7 @@ class Sink_server:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Binding actual host and port.
-        slogger.debug("run: \tSetting socket...")
+        slogger.debug("__init__: \tSetting socket...")
         sock.bind((self._host, self._port))
         
         """
@@ -81,7 +82,7 @@ class Sink_server:
         """
         # Register the socket to be monitored.
         self.sel.register(sock, selectors.EVENT_READ, data=None)
-        slogger.debug("run: Monitoring set.")
+        slogger.debug("__init__: Monitoring set.")
     
     def send_msg(self, send_host, send_port, msg):
         """
@@ -94,6 +95,7 @@ class Sink_server:
                 s.connect((send_host, send_port))
                 byte_msg = bytes(msg, 'utf-8')
                 s.sendall(byte_msg)
+                self.no_data=True
 
         
     # Run listener function.
@@ -110,8 +112,8 @@ class Sink_server:
         """
         # Event loop.
         try:
-            while True:
-                events = self.sel.select(timeout=None)
+            while self.no_data:
+                events = self.sel.select(timeout=5)
                 for key, mask in events:
                     if key.data is None:
                         """
@@ -195,7 +197,8 @@ class Sink_server:
         """
         Unregisters and closes the connection, called at the end of service.
         """
-        slogger.debug("unregister_and_close: Closing connection...")
+        self.no_data = False
+        slogger.debug("unregister_and_close: Closing connection..."+str(self.no_data))
         # Unregister the connection.
         try:
             self.sel.unregister(sock)

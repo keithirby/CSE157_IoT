@@ -27,8 +27,7 @@ import logging
 import selectors
 import socket
 import types
-HOST = "192.168.1.1"
-PORT = 1024
+
 
 # Set up logging for server.
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
@@ -41,7 +40,7 @@ Server Class:
 Server class for listening to and replying to incoming messages. Pay 
 special attention to where you can insert event-handling code.
 """
-class Server:
+class Sink_server:
     def __init__(self, host, port):
         """
         Our server will use a host (its own address) and port to listen 
@@ -83,8 +82,22 @@ class Server:
         # Register the socket to be monitored.
         self.sel.register(sock, selectors.EVENT_READ, data=None)
         slogger.debug("run: Monitoring set.")
-    # Run function.
-    def run(self):
+    
+    def send_msg(self, send_host, send_port, msg):
+        """
+        Send a socket message to a specfied address and port
+        """
+        
+        # Create a temporary socket and send a message
+        slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((send_host, send_port))
+                byte_msg = bytes(msg, 'utf-8')
+                s.sendall(byte_msg)
+
+        
+    # Run listener function.
+    def run_listener(self):
         """
         Starts listening for connections and starts the main event loop. 
         This method works as the main "run" function for the server, 
@@ -132,22 +145,10 @@ class Server:
         data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
         slogger.info(f"accept_wrapper: {data} | {conn} | {type(conn)}")
         
-        # Grab the data from the recieved packet and log it
-        # self.extract_data(conn)
-        
         events = selectors.EVENT_READ | selectors.EVENT_WRITE
         # Register connection with selector.
         self.sel.register(conn, events, data=data)
-    def extract_data(self, conn):
-            """
-            Grabs the data from the conn (Connection) argument and logs it
-            """
-            # Grab the data packet from the connection line
-                # We use "self.port" because we are grabbing data from another device connected 
-                # to us
-            data_packet = conn.recv(self._port)
-            # Log the data 
-            slogger.info(f"accept_wrapper: {data_packet}")
+
             
     def service_connection(self, key:selectors.SelectorKey, mask):
         """
@@ -186,6 +187,7 @@ class Server:
                 like. It is good practice to make a new method to handle 
                 the message, and then call it here.
                 """
+                slogger.info(f"handling data: {data.outb}")
                 pass # ADD HANDLING CODE HERE.
                 # Unregister and close socket.
                 self.unregister_and_close(sock)
@@ -205,11 +207,4 @@ class Server:
         except OSError as e:
             slogger.error(f"unregister_and_close: Socket could not close:\n{e}")
 
-"""
-Using this simple server class, you should be able to create a server 
-that can accept multiple socket connections from multiple clients and 
-handle incoming messages.
-"""
 
-myServer = Server(HOST, PORT)
-myServer.run()

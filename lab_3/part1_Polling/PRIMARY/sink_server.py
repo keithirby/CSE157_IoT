@@ -18,7 +18,11 @@ class Sink_server:
         self._host = host
         self._port = port
         self._no_packet = True
-
+        self._rtemp_list = []
+        self._rhumd_list = []
+        self._smois_list = []
+        self._speed_list = []
+        
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((self._host, self._port))
@@ -104,57 +108,65 @@ class Sink_server:
                 if mask & selectors.EVENT_WRITE:
                     if data.outb:
                         slogger.info(f"handling data: {data.outb}")
-                        data_list = self.packet_parser(data.outb)
-                        #does it always get reset?
-                        #data_list[0][1]=rtemp
-                        #data_list[1][1]=rhumd
-                        #data_list[3][1]=smois
-                        #data_list[4][1]=speed
-                        #put all the data into a list
-                        self.plot_data()
-                        # Process data_list as needed
-
+                        self._data_list = self.packet_parser(data.outb)
                         # Unregister and close socket.
                         self.unregister_and_close(sock)
-
-                        return data_list
+                        return self._data_list
+    
     def packet_parser(self, data):
-        """
-        Parses incoming packet data
-        """
         str_data = data.decode()
         data_results = str_data.split(",")
-
         exampleList = []
         for i in range(1, 6):
             exampleList.append(data_results[i].split(":"))
-        return exampleList
-    
-    def plot_data(self, i):
-        lables = ['Sec1', 'Sec2', 'Primary', 'Avg']
-        #temperature = data_list[0][1]
-        temperature = [20,22,24,13]
-        humidity = [10,50,30,60]
-        smoisture = [500,530,330,710]
-        speed = [5,1,6,3]
 
-        #this is only one data. put it in a loop where it will be done every time and resets every time. maybe in the main loop
+        #add the data of sec1 and sec2 to the list when it runs
+        #add the third data from direct I2C input to the host pi
+        self._rtemp_list.append(float(exampleList[1]))
+        self._rhumd_list.append(float(exampleList[1]))
+        self._smois_list.append(float(exampleList[1]))
+        self._speed_list.append(float(exampleList[1]))
+
+        return exampleList
+
+    def find_average(self, numbers):
+        average = sum(numbers) / len(numbers)  # Calculate the average
+        return average
+
+    def plot_data(self, i):
+        """
+        APPEND THE DATA FROM THE OWN RASPBERRY PI
+        after receiving data from the two secondary pis but before plotting data
+        """
+        lables = ['Sec1', 'Sec2', 'Primary', 'Avg']
+        
+        #finding the average of three pi results        
+        rtemp_avg = self.find_average(self._rtemp_list)
+        rhumd_avg = self.find_average(self._rhumd_list)
+        smois_avg = self.find_average(self._smois_list)
+        speed_avg = self.find_average(self._speed_list)        
+        
+        #adding average to the list
+        self._rtemp_list.append(rtemp_avg)
+        self._rhumd_list.append(rhumd_avg)
+        self._smois_list.append(smois_avg)
+        self._speed_list.append(speed_avg)
         
         fig, axs = plt.subplots(2,2,figsize=(10,8))
 
-        axs[0,0].plot(lables, temperature, marker = 'o')
+        axs[0,0].scatter(lables, self._rtemp_list, marker = 'o')
         axs[0,0].set_title('Temperature Sensor')
         #axs[0,0].set_ylables('Temperature(C)')
 
-        axs[0,1].plot(lables, humidity, marker = 'o')
+        axs[0,1].scatter(lables, self._rhumd_list, marker = 'o')
         axs[0,1].set_title('Humidity Sensor')
         #axs[0,1].set_ylables('Humidity(%)')
 
-        axs[1,0].plot(lables, smoisture, marker = 'o')
+        axs[1,0].scatter(lables, self._smois_list, marker = 'o')
         axs[1,0].set_title('Soil Moisture Sensor')
         #axs[1,0].set_ylables('Soil Moisture')
 
-        axs[1,1].plot(lables, speed, marker = 'o')
+        axs[1,1].scatter(lables, self._speed_list, marker = 'o')
         axs[1,1].set_title('Wind Sensor')
         #axs[1,1].set_ylables('Wind speed(m/s)')
 
@@ -162,8 +174,12 @@ class Sink_server:
         filename = f'polling-plot-{i}.png'
         return plt.savefig(filename)
 
-
-
+    def reset_data(self):
+        self._rtemp_list = []
+        self._rhumd_list = []
+        self._smois_list = []
+        self._speed_list = []
+        
     def unregister_and_close(self, sock: socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.

@@ -44,9 +44,12 @@ def main():
 		else: 
 			logMain.debug(f"PRIMARY:main: no message sent #2")
 		sleep(2)
-		mySink.plot_data(loop_number)
-		#run this into the polling-plot-loop_number.png
 
+		#Read I2C from own pi and append it to the data list
+
+		#run this into the polling-plot-loop_number.png
+		mySink.plot_data(loop_number)
+		mySink.reset_data
 
 		#ADD LATER: Processing data_packet_1 and data_packet_2
 

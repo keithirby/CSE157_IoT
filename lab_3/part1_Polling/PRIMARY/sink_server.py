@@ -1,213 +1,181 @@
-"""
-Multi-connection Server (Event Driven-like Server)
-
-Template provided by: Harikrishna Kuttivelil
-(UC Santa Cruz, Internetworking Research Group)
-"""
-
-"""
-This is an example of a multi-connection server you can implement using 
-the knowledge and guide offered here:
-https://realpython.com/python-sockets/#multi-connection-client-and-server.
-
-This multi-connection server can accept connections from multiple clients 
-connecting to it via a socket. This is helpful, for example, when you are 
-expecting your server to handle multiple concurrent connections without 
-blocking new connections. This template will mostly follow the code 
-offered in the site above, but will have a few more annotations in it.
-
-The "event-driven" aspect of it refers to the fact, that in this simple 
-model, the server takes action on when it receives a message, an "event",
-from a client. This is in contrast to the "request-response" model, where 
-the server waits for a client to send a request, and then responds to it. 
-To implement the latter, you may consider how we can flip the use of 
-"servers" and "clients" to facilitate such a model.
-"""
 import logging
 import selectors
 import socket
 import types
-
+import matplotlib.pyplot as plt
 
 # Set up logging for server.
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 slogger = logging.getLogger(f"(srv)")
-slogger.setLevel(level=logging.INFO)
+slogger.setLevel(level=logging.DEBUG)
 
-"""
-Server Class:
-
-Server class for listening to and replying to incoming messages. Pay 
-special attention to where you can insert event-handling code.
-"""
 class Sink_server:
     def __init__(self, host, port):
         """
-        Our server will use a host (its own address) and port to listen 
-        for connections. It must also use a selector to monitor for events 
-        on the socket. It's good practice, when creating a class, to 
-        initialize these variables in the __init__ function.
+        Initialization of the server class.
         """
-        slogger.debug("__init__: Initializing server...")
-        # Set up selector.
         self.sel = selectors.DefaultSelector()
-        # Set host and port.
         self._host = host
         self._port = port
-        self.no_data = True
-        
-        
-        """
-        Setting up the actual server using socket library
-        """
-        # Mandatory start for setting server socket connections
-        slogger.debug("__init__: Starting server...")
+        self._no_packet = True
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # Binding actual host and port.
-        slogger.debug("__init__: \tSetting socket...")
         sock.bind((self._host, self._port))
-        
-        """
-        The socket is all set up and ready to listen for connections.
-        """
+
         sock.listen()
-        slogger.info(f"__init__: Listening from port {self._port}.")
-        sock.setblocking(False) #dont block the program while we wait on callee-"not busy waiting"
-        slogger.info("__init__: Server initialized.")
-        
-        """
-        As mentioned before, we use selectors to monitor for new events 
-        by monitoring the socket for changes.
-        """
-        # Register the socket to be monitored.
+        sock.setblocking(False)
         self.sel.register(sock, selectors.EVENT_READ, data=None)
-        slogger.debug("__init__: Monitoring set.")
-    
+
+    def set_packet_flag(self):
+        """
+        Set the packet received flag to true
+        """
+        self._no_packet = False
+
     def send_msg(self, send_host, send_port, msg):
         """
-        Send a socket message to a specfied address and port
+        Send a socket message to a specified address and port
         """
-        
+        #while True:
+        #    print("p")
         # Create a temporary socket and send a message
-        slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((send_host, send_port))
-                byte_msg = bytes(msg, 'utf-8')
-                s.sendall(byte_msg)
-                self.no_data=True
+        slogger.info(f'send_msg: Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
+        try:
+            sock = socket.create_connection((send_host, send_port), timeout=2)
+            #sock.setblocking(0)
+            byte_msg = bytes(msg, 'utf-8')
+            sock.sendall(byte_msg)
+            slogger.debug(f"send_msg: msg is [{byte_msg}]")
+            #sock.setblocking(1)
+            return True
+        except socket.timeout:
+            print("timeout")
+            return False
+        except ConnectionRefusedError:
+            return False
 
-        
-    # Run listener function.
     def run_listener(self):
         """
-        Starts listening for connections and starts the main event loop. 
-        This method works as the main "run" function for the server, 
-        kicking off the other methods of this service.
+        Starts listening for connections and starts the main event loop.
         """
-        
-        """
-        Finally, we arrive at the event loop. This is where the server
-        will handle new incoming connections and their ensuing sessions.
-        """
-        # Event loop.
         try:
-            while self.no_data:
+            while self._no_packet:
                 events = self.sel.select(timeout=5)
                 for key, mask in events:
                     if key.data is None:
-                        """
-                        Here, we accept and register new connections.
-                        """
                         self.accept_wrapper(key.fileobj)
                     else:
-                        """
-                        Here, we service existing connections. This is 
-                        the method where we will include our event-handling
-                        code.
-                        """
-                        self.service_connection(key, mask)
+                        return self.service_connection(key, mask)
         except KeyboardInterrupt:
             slogger.info("run: Caught keyboard interrupt, exiting...")
         finally:
             self.sel.close()
-    # Helper functions for accepting wrappers, servicing connections, and closing.
+
     def accept_wrapper(self, sock):
         """
         Accepts and registers new connections.
         """
-        # Use sock.accept() to start a connection with another device
         conn, addr = sock.accept()
         slogger.debug(f"accept_wrapper: Accepted connection from {addr}.")
-        
-        # Disable blocking.
+
         conn.setblocking(False)
-        
-        # Create data object to monitor for read and write availability.
+
         data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
-        slogger.info(f"accept_wrapper: {data} | {conn} | {type(conn)}")
-        
+
         events = selectors.EVENT_READ | selectors.EVENT_WRITE
-        # Register connection with selector.
         self.sel.register(conn, events, data=data)
 
-            
-    def service_connection(self, key:selectors.SelectorKey, mask):
+    def service_connection(self, key: selectors.SelectorKey, mask):
         """
         Services the existing connection and calls to unregister upon completion.
         """
-        slogger.debug(f"service_connection: Servicing connection from: {key}, {mask}")
         sock = key.fileobj
         data = key.data
-        # Check for reads or writes.
-        """
-        In this model, we are first waiting for new messages from the 
-        client connections, so we are reading for data as it arrives 
-        and until it stops arriving (end of message). We then switch 
-        to writing to the client, sending a reply.
-        """
+
         if mask & selectors.EVENT_READ:
-            # At event, it should be ready for read.
             recv_data = sock.recv(1024)
-            # As long as data comes in, append it.
             if recv_data:
                 data.outb += recv_data
-            # When data stops, close the connection.
             else:
                 slogger.debug(f"Closing connection to {data.addr}")
                 self.sel.unregister(sock)
                 sock.close()
-        if mask & selectors.EVENT_WRITE:
-            # At event, it should be ready to write.
-            if data.outb:
-                """
-                EVENT HANDLING CODE HERE:
+                if mask & selectors.EVENT_WRITE:
+                    if data.outb:
+                        slogger.info(f"handling data: {data.outb}")
+                        data_list = self.packet_parser(data.outb)
+                        #does it always get reset?
+                        #data_list[0][1]=rtemp
+                        #data_list[1][1]=rhumd
+                        #data_list[3][1]=smois
+                        #data_list[4][1]=speed
+                        #put all the data into a list
+                        self.plot_data()
+                        # Process data_list as needed
 
-                At this point, you have received a complete message from 
-                one of the client connections and it is stored in 
-                data.outb. You can now handle the message however you 
-                like. It is good practice to make a new method to handle 
-                the message, and then call it here.
-                """
-                slogger.info(f"handling data: {data.outb}")
-                pass # ADD HANDLING CODE HERE.
-                # Unregister and close socket.
-                self.unregister_and_close(sock)
-    def unregister_and_close(self, sock:socket.socket):
+                        # Unregister and close socket.
+                        self.unregister_and_close(sock)
+
+                        return data_list
+    def packet_parser(self, data):
+        """
+        Parses incoming packet data
+        """
+        str_data = data.decode()
+        data_results = str_data.split(",")
+
+        exampleList = []
+        for i in range(1, 6):
+            exampleList.append(data_results[i].split(":"))
+        return exampleList
+    
+    def plot_data(self, i):
+        lables = ['Sec1', 'Sec2', 'Primary', 'Avg']
+        #temperature = data_list[0][1]
+        temperature = [20,22,24,13]
+        humidity = [10,50,30,60]
+        smoisture = [500,530,330,710]
+        speed = [5,1,6,3]
+
+        #this is only one data. put it in a loop where it will be done every time and resets every time. maybe in the main loop
+        
+        fig, axs = plt.subplots(2,2,figsize=(10,8))
+
+        axs[0,0].plot(lables, temperature, marker = 'o')
+        axs[0,0].set_title('Temperature Sensor')
+        #axs[0,0].set_ylables('Temperature(C)')
+
+        axs[0,1].plot(lables, humidity, marker = 'o')
+        axs[0,1].set_title('Humidity Sensor')
+        #axs[0,1].set_ylables('Humidity(%)')
+
+        axs[1,0].plot(lables, smoisture, marker = 'o')
+        axs[1,0].set_title('Soil Moisture Sensor')
+        #axs[1,0].set_ylables('Soil Moisture')
+
+        axs[1,1].plot(lables, speed, marker = 'o')
+        axs[1,1].set_title('Wind Sensor')
+        #axs[1,1].set_ylables('Wind speed(m/s)')
+
+        plt.tight_layout()
+        filename = f'polling-plot-{i}.png'
+        return plt.savefig(filename)
+
+
+
+    def unregister_and_close(self, sock: socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.
         """
-        self.no_data = False
-        slogger.debug("unregister_and_close: Closing connection..."+str(self.no_data))
-        # Unregister the connection.
+        self.set_packet_flag()
+        slogger.debug("unregister_and_close: Closing connection...")
         try:
             self.sel.unregister(sock)
         except Exception as e:
             slogger.error(f"unregister_and_close: Socket could not be unregistered:\n{e}")
-        # Close the connection.
+
         try:
             sock.close()
         except OSError as e:
             slogger.error(f"unregister_and_close: Socket could not close:\n{e}")
-
-

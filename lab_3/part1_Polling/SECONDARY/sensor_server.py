@@ -3,8 +3,8 @@ import socket
 import selectors
 import types
 import logging
-HOST = "192.168.1.2"
-PORT = 1024
+from classes import i2c_controller
+
 
 # Set up logging for server.
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
@@ -19,24 +19,25 @@ class Sensor_server:
         for connections. It must also use a selector to monitor for events 
         on the socket.
         """
-        slogger.debug("__init__: Initializing server...")
+        slogger.info("__init__: Initializing server...")
         # Set up selector.
         self.sel = selectors.DefaultSelector()
         # Set host and port.
         self._host = host
         self._port = port
-        self.no_data = True
+        self._no_packet = True
+        self.i2c_cont = i2c_controller() # i2c controller
         
         
         """
         Setting up the actual server using socket library
         """
         # Mandatory start for setting server socket connections
-        slogger.debug("__init__: Starting server...")
+        slogger.info("__init__: Starting server...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Binding actual host and port.
-        slogger.debug("__init__: \tSetting socket...")
+        slogger.info("__init__: \tSetting socket...")
         sock.bind((self._host, self._port))
         
         """
@@ -53,22 +54,43 @@ class Sensor_server:
         """
         # Register the socket to be monitored.
         self.sel.register(sock, selectors.EVENT_READ, data=None)
-        slogger.debug("__init__: Monitoring set.")
-    # Run function.
+        slogger.info("__init__: Monitoring set __init__ complete.")
+
     
+    def set_packet_flag(self):
+        """
+        Set the packet received flag to false
+        """
+        self._no_packet = False
+
+    def set_packet_flag_T(self):
+        """
+        Set the packet received flag to true
+        """
+        self._no_packet = True
+
     def send_msg(self, send_host, send_port, msg):
         """
         Send a socket message to a specfied address and port
         """
         
-        # self.no_data = True
         # Create a temporary socket and send a message
         slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Try to connect to the host
+            try:
                 s.connect((send_host, send_port))
                 byte_msg = bytes(msg, 'utf-8')
                 s.sendall(byte_msg)
+                slogger.info(f"send_msg: message sent!")
             
+            #If the connection doesnt work print the failure
+            except Exception as error:
+                slogger.error(f"send_msg: Error is [{error}]")
+
+
+    
+    # Run the packet listener function        
     def run_listener(self):
         """
         Starts listening for connections and starts the main event loop. 
@@ -76,16 +98,15 @@ class Sensor_server:
         kicking off the other methods of this service.
         """
         
-        """
-        Finally, we arrive at the event loop. This is where the server
-        will handle new incoming connections and their ensuing sessions.
-        """
         # Event loop.
-        try:
-            while self.no_data:
-                slogger.debug(f"In while loop! {self.no_data}")
-                events = self.sel.select(timeout=5)
-                self.no_data = False
+        slogger.info(f"run_listener: starting...")
+        slogger.debug(f"run_listener: self._no_packet is [{self._no_packet}]")
+
+        while self._no_packet:
+            slogger.debug(f"run_listener: while loop self._no_packet is {self._no_packet}")
+            try:
+                events = self.sel.select(timeout=2)
+
 
                 for key, mask in events:
                     if key.data is None:
@@ -101,11 +122,14 @@ class Sensor_server:
                         code.
                         """
                         slogger.debug(f"entering service_connection")
-                        self.service_connection(key, mask)
-        except KeyboardInterrupt:
-            slogger.info("run_listener: Caught keyboard interrupt, exiting...")
-        finally:
-            self.sel.close()
+                        service_return = self.service_connection(key, mask)
+                        slogger.debug(f"run_listener: service_return is [{service_return}]")
+                        return service_return
+            except Exception as error: 
+                slogger.error(f"run_listener: error is [{error}]")
+                break
+
+        slogger.info(f"run_listener: finished")
     # Helper functions for accepting wrappers, servicing connections, and closing.
     def accept_wrapper(self, sock):
         """
@@ -131,7 +155,7 @@ class Sensor_server:
         """
         Services the existing connection and calls to unregister upon completion.
         """
-        slogger.debug(f"service_connection: Servicing connection from: {key}, {mask}")
+        slogger.info(f"service_connection: Servicing connection from: {key}, {mask}")
         sock = key.fileobj
         data = key.data
         # Check for reads or writes.
@@ -165,18 +189,92 @@ class Sensor_server:
                 like. It is good practice to make a new method to handle 
                 the message, and then call it here.
                 """
-                slogger.info(f"handling data: {data.outb}")
-                pass # ADD HANDLING CODE HERE.
+                slogger.debug(f"service_connection: EVENT_WRITE data is: {data.outb}")
+
                 
+
                 # Unregister and close socket.
                 self.unregister_and_close(sock)
+                # React to the packet
+                handler_return = self.packet_handler(data.outb)
+                slogger.debug(f"service_connection: packet_handler return [{handler_return}]")
+                return handler_return
                 
+    def packet_handler(self, binary_packet):
+        """
+        Handles packet depending on what is in the header (begining of the packet)"
+        """
+        #Check what the packet is asking for
+        slogger.info(f"packet_handler: binary_packet is {binary_packet}")
+        #If the binary_packet is not none decode the packet to a string
+        if binary_packet:
+            packet = binary_packet.decode()
+            slogger.debug(f"packet_handler: packet is {packet}")
+            #If the packet is requesting data then send the post msg back
+            if packet == "Requesting Data":
+                return self.packet_post_encapsulator()
+            else: 
+            #Else return a empty packet because we have no other events 
+                return None
+        else: 
+            slogger.debug(f"packet_handler: packet is None")
+    def packet_post_encapsulator(self):
+        """
+        Creates a new Post Data and adds all the polling data to it
+        """
+        # Get the polling list (list with all the sensor reads)
+        slogger.info(f"packet_post_encapsulator: running...")
+        polling_list = self.poll_all()
+
+
+        #Calculate the entire length of the post packet
+        polling_length = len(polling_list)
+        header_length = len("Post Data")
+        num_commas = 5 # We poll 5 sensors so we need 5 commas as delimiter
+        
+        #Define the header msg of the packet
+        post_packet = "Post Data,"
+        
+        #compile all the sensor data into one packet
+        for data in polling_list:
+            slogger.debug(f"post_encap: pre-Data [{data}]")
+            slogger.debug(f"    post_encap: pre-post-packet[{post_packet}]")
+            data += ","
+            post_packet += data
+
+            slogger.debug(f"post_encap: post-post-packet[{post_packet}]")
+
+        slogger.info("packet_post_encapsulator: finished")
+        return post_packet
+
+
+    def poll_all(self):
+        """
+        Poll all 5 sensors and append their data to a list and return 
+        """
+        #Create a empty list to append the sensor results too
+        slogger.info(f"poll_all: running...")
+        poll_list = [] 
+
+        #Poll all 5 of the sensors and append them each to the list
+        poll_list.append(self.i2c_cont.getTemp())
+        poll_list.append(self.i2c_cont.getHumd())
+        poll_list.append(self.i2c_cont.getSoilTemp())
+        poll_list.append(self.i2c_cont.getSoilMoist())
+        poll_list.append(self.i2c_cont.map_volt_value(self.i2c_cont.getADCVoltage()))
+        
+        #Return the poll list
+        slogger.info("poll_all: finished")
+        return poll_list
+
     def unregister_and_close(self, sock:socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.
         """
-        self.no_data = False
-        slogger.debug("unregister_and_close: Closing connection... No_data" + str(self.no_data))
+        # Set the self._no_packet flag to false because a packet was sent
+        slogger.info(f"unregister_and_close: running...")
+        self.set_packet_flag()
+        slogger.debug("unregister_and_close: Closing connection... No_data" + str(self._no_packet))
         # Unregister the connection.
         try:
             self.sel.unregister(sock)
@@ -187,12 +285,13 @@ class Sensor_server:
             sock.close()
         except OSError as e:
             slogger.error(f"unregister_and_close: Socket could not close:\n{e}")
-
+        
+        slogger.info("unregister_and_close: finished")
 """
 Using this simple server class, you should be able to create a server 
 that can accept multiple socket connections from multiple clients and 
 handle incoming messages.
 """
 
-mySensor = Sensor_server(HOST, PORT)
-mySensor.run_listener()
+
+

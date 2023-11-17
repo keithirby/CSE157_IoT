@@ -168,8 +168,11 @@ class Sink_server:
             poll_list.append(self.i2c_cont.getHumd())
             poll_list.append(self.i2c_cont.getSoilTemp())   
             poll_list.append(self.i2c_cont.getSoilMoist())
-            poll_list.append(self.i2c_cont.map_volt_value(self.i2c_cont.getADCVoltage()))
-        
+            try:
+                poll_list.append(self.i2c_cont.map_volt_value(self.i2c_cont.getADCVoltage()))
+            except:
+                poll_list.append("winds:ERR") # in the case init adc returns a None
+                
             #Return the poll list
             slogger.info(f"poll_all: finished")
             return poll_list

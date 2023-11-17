@@ -2,7 +2,7 @@ from classes import i2c_controller
 from classes import plotting_data
 from time import sleep
 import logging
-import token_class
+from token_class import token_server
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 logMain = logging.getLogger(f"(srv)")
@@ -41,10 +41,15 @@ def main():
     #Note: Only one user should start with the token, logic is not implemented for 
     #multiple tokens
     user_answer = user_question()
-	
+    #Create the token server instance
+    my_server = token_server(HOST_IP, PORT)
     #If the current Pi is the first token server then start with sending a message
     if user_answer == True: 
-        pass
+        #Create the first token packet
+        token_packet = my_server.create_token_packet()
+        #Send the token_packet to the next host
+
+        
 
     #If the current Pi isnt the first token or sent the token already then wait and listen 
     #for the token

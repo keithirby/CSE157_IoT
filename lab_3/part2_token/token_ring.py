@@ -1,0 +1,59 @@
+from classes import i2c_controller
+from classes import plotting_data
+from time import sleep
+import logging
+import token_class
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
+logMain = logging.getLogger(f"(srv)")
+logMain.setLevel(level=logging.DEBUG)
+
+
+#Setting global defaults, current Pi's ip address, other Pi's addresses, and ports
+HOST_IP = "192.168.1.1"
+HOSTS = ["192.168.1.2","192.168.1.3"]
+TOTAL_HOSTS = 3 
+PORT = 1024 
+
+
+def user_question():
+    """
+    Ask the user if they start with the token or not
+    """
+    #Ask the user if the are the first token server
+    print("Are you the token bearer? Y or y for Yes | N or n for No")
+	#Wait for user input
+    user_input = input()
+	#Turn the user input lowercase
+    user_input = user_input.lower()
+	#React to the user input
+    if user_input == "y":
+        return True
+    else: 
+        return False
+
+
+def main(): 
+    """
+    Run the main event of our token server
+    """
+    #Ask at the start of the token server if the current one starts with a token
+    #Note: Only one user should start with the token, logic is not implemented for 
+    #multiple tokens
+    user_answer = user_question()
+	
+    #If the current Pi is the first token server then start with sending a message
+    if user_answer == True: 
+        pass
+
+    #If the current Pi isnt the first token or sent the token already then wait and listen 
+    #for the token
+    while True: 
+        pass
+        #start listener
+        #once listener ends react to add and send token or plot and reset token
+          
+
+
+if __name__ == '__main__': 
+    main()

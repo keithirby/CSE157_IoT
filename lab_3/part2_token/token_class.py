@@ -39,7 +39,6 @@ class token_server:
         slogger.info(f"__init__: finished")
 
     
-    
     def run_listener(self):
         """
         Starts listening for connections and starts the main event loop.
@@ -65,17 +64,20 @@ class token_server:
             #self.sel.close()
             slogger.info("run_listener: finished")
     
+
     def set_packet_flag_F(self):
         """
         Set the packet received flag to false
         """
         self._no_packet = False
 
+
     def set_packet_flag_T(self):
         """
         Set the packet received flag to true
         """
         self._no_packet = True
+
 
     def accept_wrapper(self, sock):
         """
@@ -95,6 +97,7 @@ class token_server:
         events = selectors.EVENT_READ | selectors.EVENT_WRITE
         # Register connection with selector.
         self.sel.register(conn, events, data=data)
+
 
     def service_connection(self, key:selectors.SelectorKey, mask):
         """
@@ -173,7 +176,7 @@ class token_server:
         
         # Create a temporary socket and send a message
         slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
-        self.set_packet_flag_T()
+        #self.set_packet_flag_T()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # Try to connect to the host
             try:
@@ -217,7 +220,22 @@ class token_server:
         slogger.info("packet_post_encapsulator: finished")
         return post_packet
     
-
+    @classmethod
+    def create_token_packet(cls):
+        """
+        Create the token packet for the token ring network
+        """ 
+        #Define the three main portions of the first token packet
+        slogger.info(f"create_token_packet: running...")
+        header = "token"
+        footer = "seq:1"
+        deliminter = ","
+        #Combine the token packet parts into one
+        combined = header + deliminter + footer
+        slogger.debug(f"create_token_packet: msg is [{combined}]")
+        slogger.info(f"create_token_packet: finished")
+        #Return the token packet
+        return combined
     def unregister_and_close(self, sock:socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.

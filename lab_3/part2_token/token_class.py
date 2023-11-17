@@ -4,12 +4,18 @@ import selectors
 import types
 import logging
 from classes import i2c_controller
-
-
 # Set up logging for server.
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 slogger = logging.getLogger(f"(srv)")
 slogger.setLevel(level=logging.DEBUG)
+#Setting global defaults like all IP addresses, number of devices, and ports
+#NOTE: because of the logic in ring_handler this version does not support more than 9 hosts
+#NOTE: KEEP THE HOSTS LIST ORDERED FROM SMALLEST TO LARGEST ON LAST DIGIT OR DOESNT WORK
+#NOTE: The code in ring_handler assumes the hosts last digit count up +1 
+HOSTS = ["192.168.1.1","192.168.1.2","192.168.1.3"]
+TOTAL_HOSTS = 3 
+PORT = 1024
+TOKEN_HEADER = "token"
 
 
 class token_server:
@@ -148,29 +154,9 @@ class token_server:
 
                 #Return the parsed data packet
                 return parsed_data
-            
-
-    def packet_handler(self, binary_packet):
-        """
-        Handles packet depending on what is in the header (begining of the packet)"
-        """
-        #Check what the packet is asking for
-        slogger.info(f"packet_handler: binary_packet is {binary_packet}")
-        #If the binary_packet is not none decode the packet to a string
-        if binary_packet:
-            packet = binary_packet.decode()
-            slogger.debug(f"packet_handler: packet is {packet}")
-            #If the packet is requesting data then send the post msg back
-            if packet == "Token":
-                return self.packet_post_encapsulator()
-            else: 
-            #Else return a empty packet because we have no other events 
-                return None
-        else: 
-            slogger.debug(f"packet_handler: packet is None")
 
 
-    def packet_post_encapsulator(self):
+    def poll_data_to_string(self):
         """
         Creates a new Post Data and adds all the polling data to it
         """
@@ -206,7 +192,7 @@ class token_server:
         """ 
         #Define the three main portions of the first token packet
         slogger.info(f"create_token_packet: running...")
-        header = "token"
+        header = TOKEN_HEADER
         footer = "seq:1"
         deliminter = ","
         #Combine the token packet parts into one
@@ -216,6 +202,101 @@ class token_server:
         #Return the token packet
         return combined
     
+    def packet_splitter(cls, packet):
+        """
+        Split the packet into a list of lists
+        """        
+        #Create empty list to be used later
+        split_list = []
+        #Split the packet by the first deliminter
+        item_split = packet.split(",")
+        slogger.debug(f"packet_splitter: item_split [{item_split}]")
+        #split the items from their numbers
+        for item in item_split:
+            temp = item.split(":")
+            split_list.append(temp)
+        slogger.debug(f"packet_splitter: split_list [{split_list}]")
+        #Return the split list
+        return split_list
+
+    @classmethod
+    def check_seq_number(cls, packet):
+        """
+        Helper function to check what the sequence number of the current packet is
+        """
+        slogger.info("check_seq_number: starting...")
+        #If the packet is not empty
+        if packet:
+            #Set two empty strings to be used later
+            seq_check = "" 
+            seq_num = ""
+            #Split the packet items from eachother
+            split_list = cls.packet_splitter(packet)
+
+            #Find the length of the list
+            list_length = len(split_list)
+            
+            #Check the seq # which should be the last item in the list
+            seq_item = split_list[list_length - 1] # Should look like [seq, <#>]
+            slogger.debug(f"check_seq_number: seq_item [{seq_item}]") 
+            if seq_item[0] == "seq":
+                slogger.info("check_seq_number: finished")
+                slogger.debug(f"check_seq_number: returned number is [{seq_item[1]}]")
+                return seq_item[1]
+        
+        #If it is a empty packet or something else errors return None
+        slogger.info("check_seq_number: finished")
+        return None
+
+
+    @classmethod
+    def check_if_token_packet(cls, packet):
+        """
+        Checks if the packet header is the preset token header
+        """
+        slogger.info("check_if_token_packet: starting...")
+
+        #Check that the packet is not none
+        if packet:
+            split_list = cls.packet_splitter()
+            slogger.debug(f"check_if_token_packet: split_list is [{split_list}]")
+
+            if split_list[0] == TOKEN_HEADER: 
+                slogger.debug(f"check_if_token_packet: returning True")
+                return True
+        
+        slogger.debug(f"check_if_token_packet: returning False")
+        return False
+            
+    def packet_adder(self, packet):
+
+    def packet_ring_handler(self, packet,seq_number):
+        """
+        React to what position we are in the seq number 
+        """
+        if seq_number < TOTAL_HOSTS:
+            #If less than total_hosts we are not the plotting host only last one is
+            host_last_digit = self._host[-1] #Grab our current hosts last IP digit
+            last_host_ip = HOSTS[-1] #Grab the last host IP address 
+            last_host_last_digit = last_host_ip[-1] #Grab the last host's IP address digit
+            
+            if host_last_digit == last_host_last_digit:
+                #Need to send cyclically at the first host 
+                send_host = HOSTS[0] #Restart the send host cyclical check
+                #add our polling data to the packet
+                pass
+            else: 
+                # send cyclically to the next host in front of it which is +1 on the last digit
+                last_digit = int(host_last_digit)
+                send_host = HOSTS[last_digit]
+                #Add our polling data to the packet
+
+
+        else: 
+            #If not less than or equal to we are the plotting host
+            # we dont need to add our polling data to the packet, we can just call it later
+            pass
+        
     
     def send_msg(self, send_host, send_port, msg):
         """
@@ -313,12 +394,6 @@ class token_server:
         data_results = str_data.split(",")
         slogger.debug(f"packet_parser: decode is [{str_data}]")
         slogger.debug(f"packet_parser: data_results is [{data_results}]")
-        
-        if(type(data) == bytes):
-            #Remove the header and the empty variable at the end of the list
-            del data_results[0] #remove the header 
-            del data_results[-1]#remove the empty item at the end of the list
-        slogger.debug(f"packet_parser mod data_results is [{data_results}]")
 
         #Split the list again to seperate the readings from their string assosciation
         data_results_split = []        

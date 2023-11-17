@@ -11,8 +11,6 @@ logMain.setLevel(level=logging.DEBUG)
 
 #Setting global defaults, current Pi's ip address, other Pi's addresses, and ports
 HOST_IP = "192.168.1.1"
-HOSTS = ["192.168.1.2","192.168.1.3"]
-TOTAL_HOSTS = 3 
 PORT = 1024 
 
 
@@ -48,6 +46,7 @@ def main():
         #Create the first token packet
         token_packet = my_server.create_token_packet()
         #Send the token_packet to the next host
+        my_server.check_ring_location(1)
 
         
 

@@ -14,27 +14,8 @@ PORT = 1024 #All IP addresses use the same port
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
 logMain = logging.getLogger(f"(srv)")
 logMain.setLevel(level=logging.DEBUG)
-from classes import i2c_controller
-from classes import plotting_data
-import logging
-from time import sleep
-HOST = "192.168.1.1" #Current device IP address 
-HOSTS = ["192.168.1.2", "192.168.1.3"] #Other IoT device IP addresses
-PORT = 1024 #All IP addresses use the same port
-
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',)
-logMain = logging.getLogger(f"(srv)")
-logMain.setLevel(level=logging.DEBUG)
 
 def main(): 
-	loop_number = 0
-	noData = []
-
-	#start our sink server 
-	mySink = Sink_server(HOST, PORT)
-	plotTool = plotting_data()
-	#Define our request data message
 	loop_number = 0
 	noData = []
 

@@ -145,6 +145,8 @@ class token_server:
 
                 #Return the parsed data packet
                 return parsed_data
+            
+
     def packet_handler(self, binary_packet):
         """
         Handles packet depending on what is in the header (begining of the packet)"
@@ -156,13 +158,36 @@ class token_server:
             packet = binary_packet.decode()
             slogger.debug(f"packet_handler: packet is {packet}")
             #If the packet is requesting data then send the post msg back
-            if packet == "Requesting Data":
+            if packet == "Token":
                 return self.packet_post_encapsulator()
             else: 
             #Else return a empty packet because we have no other events 
                 return None
         else: 
             slogger.debug(f"packet_handler: packet is None")
+
+    def send_msg(self, send_host, send_port, msg):
+        """
+        Send a socket message to a specfied address and port
+        """
+        
+        # Create a temporary socket and send a message
+        slogger.info(f'Attempting msg send to {send_host} on port {send_port}, message is [{msg}]')
+        self.set_packet_flag_T()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Try to connect to the host
+            try:
+                s.connect((send_host, send_port))
+                byte_msg = bytes(msg, 'utf-8')
+                s.sendall(byte_msg)
+                slogger.debug(f"send_msg: msg is [{byte_msg}]")
+                slogger.info(f"send_msg: message sent!")
+            
+            #If the connection doesnt work print the failure
+            except Exception as error:
+                slogger.error(f"send_msg: Error is [{error}]")
+
+
     def packet_post_encapsulator(self):
         """
         Creates a new Post Data and adds all the polling data to it
@@ -192,6 +217,7 @@ class token_server:
         slogger.info("packet_post_encapsulator: finished")
         return post_packet
     
+
     def unregister_and_close(self, sock:socket.socket):
         """
         Unregisters and closes the connection, called at the end of service.
